@@ -1,5 +1,51 @@
-use std::cmp::Ordering;
 use std::io;
+
+pub struct InitialInput {
+    pub number_of_cells: i32,
+    pub cells: Vec<Cell>,
+}
+
+pub struct TurnInput {
+    pub day: i32,
+    pub nutrients: i32,
+    pub sunpoints: i32,
+    pub score: i32,
+    pub opponent_sunpoints: i32,
+    pub opponent_score: i32,
+    pub opponent_is_waiting: bool,
+    pub my_trees: Vec<Tree>,
+    pub opponent_trees: Vec<Tree>,
+    pub possible_actions: Vec<String>,
+}
+
+#[derive(Clone)]
+pub struct Cell {
+    pub index: i32,
+    pub richness: i32,
+    pub neighbours: [i32; 6],
+}
+
+impl Copy for Cell {}
+
+#[derive(Clone)]
+pub struct Tree {
+    pub cell_index: i32,
+    pub size: i32,
+    pub is_mine: bool,
+    pub is_dormant: bool,
+    pub cell: Cell,
+}
+
+impl Copy for Tree {}
+
+pub struct SeedAction {
+    pub cell_index: i32,
+    pub tree_index: i32,
+}
+
+pub struct GrowAction {
+    tree: Tree,
+}
 
 macro_rules! parse_input {
     ($x:expr, $t:ident) => {
@@ -7,42 +53,7 @@ macro_rules! parse_input {
     };
 }
 
-#[derive(Clone)]
-struct Cell {
-    index: i32,
-    richness: i32,
-    neighbours: [i32; 6],
-}
-
-impl Copy for Cell {}
-
-struct InitialInput {
-    number_of_cells: i32,
-    cells: Vec<Cell>,
-}
-
-struct Tree {
-    cell_index: i32,
-    size: i32,
-    is_mine: bool,
-    is_dormant: bool,
-    cell: Cell,
-}
-
-struct TurnInput {
-    day: i32,
-    nutrients: i32,
-    sunpoints: i32,
-    score: i32,
-    opponent_sunpoints: i32,
-    opponent_score: i32,
-    opponent_is_waiting: bool,
-    my_trees: Vec<Tree>,
-    opponent_trees: Vec<Tree>,
-    possible_actions: Vec<String>,
-}
-
-fn parse_initial_input() -> InitialInput {
+pub fn parse_initial_input() -> InitialInput {
     let mut input_line = String::new();
     io::stdin().read_line(&mut input_line).unwrap();
 
@@ -77,7 +88,7 @@ fn parse_initial_input() -> InitialInput {
     };
 }
 
-fn parse_turn_input(cells: &Vec<Cell>) -> TurnInput {
+pub fn parse_turn_input(cells: &Vec<Cell>) -> TurnInput {
     let mut input_line = String::new();
     io::stdin().read_line(&mut input_line).unwrap();
     let day = parse_input!(input_line, i32); // the game lasts 24 days: 0-23
@@ -164,10 +175,56 @@ fn parse_turn_input(cells: &Vec<Cell>) -> TurnInput {
     }
 }
 
+pub fn parse_seed_actions(seed_actions: Vec<&String>) -> Vec<SeedAction> {
+    return seed_actions
+        .iter()
+        .map(|action| {
+            let action_parts: Vec<&str> = action.split(" ").collect();
+            return SeedAction {
+                tree_index: parse_input!(action_parts[1], i32),
+                cell_index: parse_input!(action_parts[2], i32),
+            };
+        })
+        .collect();
+}
+
+pub fn parse_grow_actions(grow_actions: Vec<&String>, turn_input: &TurnInput) -> Vec<GrowAction> {
+    return grow_actions
+        .iter()
+        .map(|action| {
+            let action_parts: Vec<&str> = action.split(" ").collect();
+            let tree_cell_index = parse_input!(action_parts[1], i32);
+            let tree = turn_input
+                .my_trees
+                .iter()
+                .find(|tree| tree.cell_index == tree_cell_index)
+                .unwrap();
+            return GrowAction { tree: *tree };
+        })
+        .collect();
+}
+
 /**
  * Auto-generated code below aims at helping you parse
  * the standard input according to the problem statement.
  **/
+
+fn grow_tree_in_richest_soil(mut possible_grow_actions: Vec<GrowAction>) {
+    possible_grow_actions.sort_by(|action_a: &GrowAction, action_b: &GrowAction| {
+        return (action_b.tree.cell.richness * 1000 + action_b.tree.size)
+            .cmp(&(action_a.tree.cell.richness * 1000 + action_a.tree.size));
+    });
+
+    for action in &possible_grow_actions {
+        eprintln!(
+            "Grow index: {}, Richness: {}, Size: {}",
+            action.tree.cell_index, action.tree.cell.richness, action.tree.size
+        );
+    }
+
+    println!("GROW {}", possible_grow_actions[0].tree.cell_index);
+}
+
 fn main() {
     // 37
     let initial_input = parse_initial_input();
@@ -177,29 +234,52 @@ fn main() {
         let mut turn_input = parse_turn_input(&initial_input.cells);
         // GROW cellIdx | SEED sourceIdx targetIdx | COMPLETE cellIdx | WAIT <message>
 
+        eprintln!("DAY: {}", turn_input.day);
+
         let grown_trees: Vec<&Tree> = turn_input
             .my_trees
             .iter()
             .filter(|tree| tree.size == 3)
             .collect();
 
+        let possible_seed_actions: Vec<&String> = turn_input
+            .possible_actions
+            .iter()
+            .filter(|action| action.contains("SEED"))
+            .collect();
+
+        let possible_grow_actions: Vec<&String> = turn_input
+            .possible_actions
+            .iter()
+            .filter(|action| action.contains("GROW"))
+            .collect();
+
         if grown_trees.len() > 0 {
             println!("COMPLETE {}", grown_trees.first().unwrap().cell_index);
-        } else {
-            turn_input.my_trees.sort_by(|tree_a: &Tree, tree_b: &Tree| {
-                tree_b.cell.richness.cmp(&tree_a.cell.richness)
+        } else if possible_seed_actions.len() > 0
+            && turn_input.my_trees.len() < 8
+            && turn_input.day < 15
+            && !turn_input.my_trees.iter().any(|tree| tree.size == 0)
+        {
+            let mut seed_actions = parse_seed_actions(possible_seed_actions);
+            seed_actions.sort_by(|action_a: &SeedAction, action_b: &SeedAction| {
+                return initial_input.cells[action_b.cell_index as usize]
+                    .richness
+                    .cmp(&initial_input.cells[action_a.cell_index as usize].richness);
             });
 
-            let grow_command = format!("GROW {}", turn_input.my_trees[0].cell_index);
-            if turn_input
-                .possible_actions
-                .iter()
-                .any(|possible_action| possible_action == &grow_command)
-            {
-                println!("{}", grow_command);
-            } else {
-                println!("WAIT");
-            }
+            let chosen_seed_action = &seed_actions[0];
+
+            println!(
+                "SEED {} {}",
+                chosen_seed_action.tree_index, chosen_seed_action.cell_index
+            )
+        } else if possible_grow_actions.len() > 0 {
+            let mut grow_actions = parse_grow_actions(possible_grow_actions, &turn_input);
+
+            grow_tree_in_richest_soil(grow_actions);
+        } else {
+            println!("WAIT");
         }
     }
 }
