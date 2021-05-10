@@ -254,11 +254,35 @@ fn main() {
             .filter(|action| action.contains("GROW"))
             .collect();
 
-        if grown_trees.len() > 0 {
+        let harvestable_number_of_trees = turn_input.sunpoints / 4;
+        let needed_days_for_harvesting = match harvestable_number_of_trees {
+            0 => i32::MAX,
+            _ => (grown_trees.len() as i32 / harvestable_number_of_trees) + 1,
+        };
+
+        eprintln!(
+            "Sunpoints: {}, Harvestable: {}, Days for harveting: {}, Grown trees: {}",
+            turn_input.sunpoints,
+            harvestable_number_of_trees,
+            needed_days_for_harvesting,
+            grown_trees.len()
+        );
+
+        eprintln!(
+            "Day: {}, Minimum day for harvesting: {}, Should harvest: {}",
+            turn_input.day,
+            24 - needed_days_for_harvesting,
+            turn_input.day > 24 - needed_days_for_harvesting
+        );
+
+        if grown_trees.len() > 0
+            && (turn_input.sunpoints > 15
+                || (turn_input.day >= 24 - needed_days_for_harvesting
+                    && harvestable_number_of_trees > 0))
+        {
             println!("COMPLETE {}", grown_trees.first().unwrap().cell_index);
         } else if possible_seed_actions.len() > 0
             && turn_input.my_trees.len() < 8
-            && turn_input.day < 15
             && !turn_input.my_trees.iter().any(|tree| tree.size == 0)
         {
             let mut seed_actions = parse_seed_actions(possible_seed_actions);
