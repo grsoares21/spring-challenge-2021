@@ -63,8 +63,7 @@ pub fn get_sunpoint_rate(my_trees: &Vec<Tree>) -> i32 {
     return my_trees
         .iter()
         .map(|tree| tree.size + 1)
-        .reduce(|a, b| a + b)
-        .unwrap();
+        .fold(0, |a, b| a + b);
 }
 
 /**
@@ -86,25 +85,27 @@ pub fn get_sunpoint_rate(my_trees: &Vec<Tree>) -> i32 {
 /* custo teorico para score */
 
 pub fn evaluate_state(game_state: &GameState) -> f32 {
-    let mean_sun_cost_to_score_ratio = game_state
+    let sun_cost_to_score_ratio = (game_state
         .my_trees
         .iter()
         .map(|tree| get_sun_cost_to_score_ratio(tree, game_state))
-        .reduce(|a, b| a + b)
-        .unwrap()
-        / game_state.my_trees.len() as f32;
+        .fold(1 as f32, |a, b| a + b.powf(3.0))
+        / game_state.my_trees.len() as f32)
+        .powf(1.0 / 3.0);
 
     let normalized_sunpoint_rate =
-        get_sunpoint_rate(&game_state.my_trees) as f32 * mean_sun_cost_to_score_ratio;
+        get_sunpoint_rate(&game_state.my_trees) as f32 * sun_cost_to_score_ratio;
 
     let game_completion_percentage = game_state.day as f32 / 23 as f32;
 
     eprintln!(
-        "Sunpoint rate: {}, sun to score ratio: {}, score: {}, game completion %: {}",
+        "Sunpoint rate: {}, sun to score ratio: {}, score: {}, game completion %: {}, points for score: {}, points for sunrate: {}",
         normalized_sunpoint_rate,
-        mean_sun_cost_to_score_ratio,
+        sun_cost_to_score_ratio,
         game_state.score,
-        game_completion_percentage
+        game_completion_percentage,
+        game_state.score as f32 * game_completion_percentage.powf(2.0),
+        (normalized_sunpoint_rate as f32) * ((1 as f32) - game_completion_percentage.powf(2.0))
     );
 
     return game_state.score as f32 * game_completion_percentage
