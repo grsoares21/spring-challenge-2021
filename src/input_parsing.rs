@@ -1,4 +1,4 @@
-use crate::types::{Cell, Tree};
+use crate::game_logic::{Cell, Tree};
 use std::io;
 
 pub struct InitialInput {
