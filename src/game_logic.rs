@@ -115,9 +115,5 @@ pub fn get_shadows_in_field<'a>(
     }
   }
 
-  for i in 0..37 as usize {
-    eprintln!("Shadow size in cell {}: {}", i, shadows[i]);
-  }
-
   return shadows;
 }

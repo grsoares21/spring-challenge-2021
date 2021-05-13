@@ -6,10 +6,20 @@ pub fn get_sun_cost_to_score_ratio(target_tree: &Tree, game_state: &GameState) -
     / get_sun_cost_to_completion(target_tree, &game_state.my_trees) as f32;
 }
 
-pub fn get_sunpoint_rate(my_trees: &Vec<Tree>) -> i32 {
-  return my_trees
+pub fn get_sunpoint_rate(game_state: &GameState) -> i32 {
+  let shadows = get_shadows_in_field(
+    game_state
+      .my_trees
+      .iter()
+      .chain(game_state.opponent_trees.iter()),
+    game_state.day + 1,
+    &game_state.cells,
+  );
+
+  return game_state
+    .my_trees
     .iter()
-    .map(|tree| tree.size + 2) // the + 2 here s only to incentivze seeds
+    .map(|tree| if tree.size > shadows[tree.cell_index as usize] { tree.size } else { 0 } + 2) // the + 2 here is only to incentivze seeds
     .fold(0, |a, b| a + b);
 }
 
@@ -26,8 +36,7 @@ pub fn evaluate_state(game_state: &GameState) -> f32 {
     0.0
   };
 
-  let normalized_sunpoint_rate =
-    get_sunpoint_rate(&game_state.my_trees) as f32 * sun_cost_to_score_ratio;
+  let normalized_sunpoint_rate = get_sunpoint_rate(&game_state) as f32 * sun_cost_to_score_ratio;
 
   let game_completion_factor = (game_state.day as f32 / 23.0).powf(3.0);
 
@@ -115,14 +124,6 @@ pub fn simulate_action(game_state: &GameState, action: Action) -> GameState {
 }
 
 pub fn get_next_action(game_state: GameState, possible_actions: Vec<Action>) -> Action {
-  let shadows = get_shadows_in_field(
-    game_state
-      .my_trees
-      .iter()
-      .chain(game_state.opponent_trees.iter()),
-    game_state.day,
-    &game_state.cells,
-  );
   let mut chosen_action = Action::Wait;
   let mut current_score = evaluate_state(&game_state);
   let number_of_seeds = game_state
