@@ -41,17 +41,22 @@ pub fn parse_initial_input() -> InitialInput {
     let inputs = input_line.split(" ").collect::<Vec<_>>();
     let index = parse_input!(inputs[0], i32); // 0 is the center cell, the next cells spiral outwards
     let richness = parse_input!(inputs[1], i32); // 0 if the cell is unusable, 1-3 for usable cells
-    let _neigh_0 = parse_input!(inputs[2], i32); // the index of the neighbouring cell for each direction
-    let _neigh_1 = parse_input!(inputs[3], i32);
-    let _neigh_2 = parse_input!(inputs[4], i32);
-    let _neigh_3 = parse_input!(inputs[5], i32);
-    let _neigh_4 = parse_input!(inputs[6], i32);
-    let _neigh_5 = parse_input!(inputs[7], i32);
+    let neigh_0 = parse_input!(inputs[2], i32); // the index of the neighbouring cell for each direction
+    let neigh_1 = parse_input!(inputs[3], i32);
+    let neigh_2 = parse_input!(inputs[4], i32);
+    let neigh_3 = parse_input!(inputs[5], i32);
+    let neigh_4 = parse_input!(inputs[6], i32);
+    let neigh_5 = parse_input!(inputs[7], i32);
+
+    eprintln!(
+      "Neighbours for cell {}: {}, {}, {}, {}, {}, {}",
+      index, neigh_0, neigh_1, neigh_2, neigh_3, neigh_4, neigh_5
+    );
 
     cells.push(Cell {
       index: index,
       richness: richness,
-      neighbours: [_neigh_0, _neigh_1, _neigh_2, _neigh_3, _neigh_4, _neigh_5],
+      neighbours: [neigh_0, neigh_1, neigh_2, neigh_3, neigh_4, neigh_5],
     })
   }
 
@@ -126,7 +131,6 @@ pub fn parse_turn_input(cells: &Vec<Cell>) -> TurnInput {
     let mut input_line = String::new();
     io::stdin().read_line(&mut input_line).unwrap();
     let possible_action = input_line.trim_matches('\n').to_string(); // try printing something from here to start with
-    eprintln!("possible action: {}", possible_action);
 
     possible_actions.push(possible_action);
   }
@@ -147,35 +151,3 @@ pub fn parse_turn_input(cells: &Vec<Cell>) -> TurnInput {
     possible_actions: possible_actions,
   }
 }
-
-/*
-USED only for ad-hoc algorithm
-pub fn parse_seed_actions(seed_actions: Vec<&String>) -> Vec<SeedAction> {
-  return seed_actions
-    .iter()
-    .map(|action| {
-      let action_parts: Vec<&str> = action.split(" ").collect();
-      return SeedAction {
-        tree_index: parse_input!(action_parts[1], i32),
-        cell_index: parse_input!(action_parts[2], i32),
-      };
-    })
-    .collect();
-}
-
-pub fn parse_grow_actions(grow_actions: Vec<&String>, turn_input: &TurnInput) -> Vec<GrowAction> {
-  return grow_actions
-    .iter()
-    .map(|action| {
-      let action_parts: Vec<&str> = action.split(" ").collect();
-      let tree_cell_index = parse_input!(action_parts[1], i32);
-      let tree = turn_input
-        .my_trees
-        .iter()
-        .find(|tree| tree.cell_index == tree_cell_index)
-        .unwrap();
-      return GrowAction { tree: *tree };
-    })
-    .collect();
-}
-*/

@@ -33,6 +33,7 @@ pub struct GameState {
   pub nutrients: i32,
   pub sunpoints: i32,
   pub my_trees: Vec<Tree>,
+  pub opponent_trees: Vec<Tree>,
 }
 
 impl Clone for GameState {
@@ -44,6 +45,7 @@ impl Clone for GameState {
       sunpoints: self.sunpoints,
       cells: self.cells.iter().copied().collect(),
       my_trees: self.my_trees.iter().copied().collect(),
+      opponent_trees: self.opponent_trees.iter().copied().collect(),
     }
   }
 }
@@ -88,4 +90,34 @@ pub fn action_to_order(action: Action) -> String {
     Action::Seed(source, target) => format!("SEED {} {}", source, target),
     Action::Complete(target) => format!("COMPLETE {}", target),
   }
+}
+
+pub fn get_shadows_in_field<'a>(
+  trees: impl Iterator<Item = &'a Tree>,
+  day: i32,
+  cells: &Vec<Cell>,
+) -> [i32; 37] {
+  let mut shadows = [0; 37];
+  let shadow_direction = (day % 6) as usize;
+
+  for current_tree in trees {
+    let mut current_neighbour = current_tree.cell.neighbours[shadow_direction];
+    for _ in 0..current_tree.size as usize {
+      if current_neighbour == -1 {
+        break;
+      }
+
+      if shadows[current_neighbour as usize] < current_tree.size {
+        shadows[current_neighbour as usize] = current_tree.size
+      }
+
+      current_neighbour = cells[current_neighbour as usize].neighbours[shadow_direction];
+    }
+  }
+
+  for i in 0..37 as usize {
+    eprintln!("Shadow size in cell {}: {}", i, shadows[i]);
+  }
+
+  return shadows;
 }

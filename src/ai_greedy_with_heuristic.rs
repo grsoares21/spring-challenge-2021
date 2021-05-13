@@ -1,4 +1,4 @@
-use crate::easing_functions::*;
+//use crate::easing_functions::*;
 use crate::game_logic::*;
 
 pub fn get_sun_cost_to_score_ratio(target_tree: &Tree, game_state: &GameState) -> f32 {
@@ -115,6 +115,14 @@ pub fn simulate_action(game_state: &GameState, action: Action) -> GameState {
 }
 
 pub fn get_next_action(game_state: GameState, possible_actions: Vec<Action>) -> Action {
+  let shadows = get_shadows_in_field(
+    game_state
+      .my_trees
+      .iter()
+      .chain(game_state.opponent_trees.iter()),
+    game_state.day,
+    &game_state.cells,
+  );
   let mut chosen_action = Action::Wait;
   let mut current_score = evaluate_state(&game_state);
   let number_of_seeds = game_state
@@ -124,8 +132,8 @@ pub fn get_next_action(game_state: GameState, possible_actions: Vec<Action>) -> 
     .count();
   eprintln!("Evaluated score for action WAIT: {}", current_score);
 
-  for (i, possible_action) in possible_actions.iter().enumerate() {
-    match *possible_action {
+  for possible_action in possible_actions {
+    match possible_action {
       Action::Wait => {
         continue;
       }
@@ -139,19 +147,19 @@ pub fn get_next_action(game_state: GameState, possible_actions: Vec<Action>) -> 
         }
         eprintln!(
           "Evaluating score for action {}....",
-          action_to_order(*possible_action)
+          action_to_order(possible_action)
         );
-        let new_state_with_action = simulate_action(&game_state, *possible_action);
+        let new_state_with_action = simulate_action(&game_state, possible_action);
         let new_state_score = evaluate_state(&new_state_with_action);
 
         eprintln!(
           "Evaluated score for action {}: {}",
-          action_to_order(*possible_action),
+          action_to_order(possible_action),
           new_state_score
         );
 
         if new_state_score > current_score {
-          chosen_action = *possible_action;
+          chosen_action = possible_action;
           current_score = new_state_score;
         }
       }

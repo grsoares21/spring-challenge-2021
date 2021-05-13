@@ -49,6 +49,7 @@ fn main() {
             nutrients: turn_input.nutrients,
             sunpoints: turn_input.sunpoints,
             my_trees: turn_input.my_trees,
+            opponent_trees: turn_input.opponent_trees,
         };
 
         //let chosen_action = ai_adhoc::get_next_action(current_state, possible_actions);
